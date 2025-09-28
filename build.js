@@ -6,7 +6,7 @@ class StaticSiteGenerator {
         this.contentDir = './content';
         this.layoutDir = './layouts';
         this.outputDir = './dist';
-        this.defaultLayout = 'default';
+        this.defaultLayout = 'layout';
     }
 
     setup() {
@@ -17,6 +17,18 @@ class StaticSiteGenerator {
             }
         });
 
+        const cssDir = path.join(this.layoutDir, 'css');
+        if (!fs.existsSync(cssDir)) {
+            fs.mkdirSync(cssDir, { recursive: true });
+            console.log(`Created directory: ${cssDir}`);
+        }
+
+        const jsDir = path.join(this.layoutDir, 'js');
+        if (!fs.existsSync(jsDir)) {
+            fs.mkdirSync(jsDir, { recursive: true });
+            console.log(`Created directory: ${jsDir}`);
+        }
+
         const vercelConfig = './vercel.json';
         if (!fs.existsSync(vercelConfig)) {
             const config = {
@@ -24,6 +36,38 @@ class StaticSiteGenerator {
             };
             fs.writeFileSync(vercelConfig, JSON.stringify(config, null, 2));
             console.log('Created vercel.json');
+        }
+    }
+
+    copyLayoutAssets() {
+        const cssDir = path.join(this.layoutDir, 'css');
+        const jsDir = path.join(this.layoutDir, 'js');
+
+        if (fs.existsSync(cssDir)) {
+            this.copyDirectoryStructure(cssDir, path.join(this.outputDir, 'css'));
+        }
+
+        if (fs.existsSync(jsDir)) {
+            this.copyDirectoryStructure(jsDir, path.join(this.outputDir, 'js'));
+        }
+    }
+
+    copyDirectoryStructure(srcDir, destDir) {
+        if (!fs.existsSync(destDir)) {
+            fs.mkdirSync(destDir, { recursive: true });
+        }
+
+        const items = fs.readdirSync(srcDir);
+        for (const item of items) {
+            const srcPath = path.join(srcDir, item);
+            const destPath = path.join(destDir, item);
+
+            if (fs.statSync(srcPath).isDirectory()) {
+                this.copyDirectoryStructure(srcPath, destPath);
+            } else {
+                fs.copyFileSync(srcPath, destPath);
+                console.log(`Copied: ${destPath}`);
+            }
         }
     }
 
@@ -53,12 +97,12 @@ class StaticSiteGenerator {
     build() {
         this.setup();
 
-
         if (fs.existsSync(this.outputDir)) {
-            fs.rmSync(this.outputDir, {recursive: true, force: true});
+            fs.rmSync(this.outputDir, { recursive: true, force: true });
         }
-        fs.mkdirSync(this.outputDir, {recursive: true});
+        fs.mkdirSync(this.outputDir, { recursive: true });
 
+        this.copyLayoutAssets();
         this.processDirectory(this.contentDir, this.outputDir);
 
         console.log('Build complete!');
@@ -87,7 +131,6 @@ class StaticSiteGenerator {
     }
 }
 
-// CLI usage
 if (require.main === module) {
     const generator = new StaticSiteGenerator();
     const command = process.argv[2];
