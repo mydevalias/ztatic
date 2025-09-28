@@ -139,6 +139,6 @@ if (require.main === module) {
         generator.build();
     } else {
         console.log('Usage:');
-        console.log('  node build.js        - Build the site');
+        console.log('  node ztatic.js        - Build the site');
     }
 }
